@@ -4,6 +4,9 @@ import json
 import time
 import math
 import pandas as pd
+import warnings
+
+warnings.filterwarnings("ignore")
 
 # define static vars
 api_base = "https://ch.tetr.io/api"
@@ -109,40 +112,80 @@ def getLeaderboard(num_records, page_size=100):
 def processRecord(record_json, user_id):
     results = record_json["results"]
     # FIXME this is stupid
-    record_row = [record_json["_id"], user_id, record_json["ts"], record_json["pb"], record_json["oncepb"], results["finaltime"], results["aggregatestats"]["pps"], results["stats"]["inputs"], results["stats"]["score"]]
+    record_row = {
+        "record_id": record_json["_id"], 
+        "user_id": user_id, 
+        "datetime": record_json["ts"], 
+        "current_pb": record_json["pb"], 
+        "ever_pb": record_json["oncepb"], 
+        "final_time": results["stats"]["finaltime"], 
+        "pps": results["aggregatestats"]["pps"], 
+        "inputs": results["stats"]["inputs"], 
+        "score": results["stats"]["score"], 
+        "pieces_placed": results["stats"]["piecesplaced"], 
+        "singles": results["stats"]["clears"]["singles"], 
+        "doubles": results["stats"]["clears"]["doubles"], 
+        "triples": results["stats"]["clears"]["triples"], 
+        "quads": results["stats"]["clears"]["quads"], 
+        "all_clears": results["stats"]["clears"]["allclear"], 
+        "finesse_faults": results["stats"]["finesse"]["faults"], 
+        "finesse_perf": results["stats"]["finesse"]["perfectpieces"]
+    }
+    # print(record_row)
     return record_row
 
 
-def getUserData(leaderboard_file, top_rank, bottom_rank):
+def getUserData(leaderboard_file, best_rank, worst_rank):
+    session_id = "CSCI4502_"+str(random.randbytes(16).hex()) # TODO check that this actually works
+    headers = {"X-Session-ID":session_id}
+
     info_df = pd.DataFrame(columns=["id", "username", "rank", "country", "created_date", "xp", "achievement_rating", "TL_games_played", "TL_games_won", "TL_play_time", "records_progression", "records_recent"])
-    records_df = pd.DataFrame(columns=["record_id", "user_id", "datetime", "current_pb", "former_pb", "final_time", "pps", "inputs", "score", "pieces_placed", "singles", "doubles", "triples", "quads", "all_clears", "finesse_faults", "finesse_perf"])
+    records_df = pd.DataFrame(columns=["record_id", "user_id", "datetime", "current_pb", "ever_pb", "final_time", "pps", "inputs", "score", "pieces_placed", "singles", "doubles", "triples", "quads", "all_clears", "finesse_faults", "finesse_perf"])
     
     leaderboard = pd.read_csv(leaderboard_file)
-    leaderboard = leaderboard.loc[leaderboard["rank"] >= bottom_rank]
-    leaderboard = leaderboard.loc[leaderboard["rank"] <= top_rank]
+    # print(leaderboard.info())
+    leaderboard = leaderboard.loc[leaderboard["rank"] <= worst_rank]
+    # print(leaderboard.info())
+    leaderboard = leaderboard.loc[leaderboard["rank"] >= best_rank]
+    # print(leaderboard.info())
 
-    for row in leaderboard:
+    for i in leaderboard.index:
+        row = leaderboard.loc[i]
+        # print(row)
         info_req = api_base+ user_info_endpoint+"/"+row["user_id"]
         prog_req = info_req+user_records_endpoint+"/progression"
         recent_req = info_req+user_records_endpoint+"/recent"
 
         user_info = requests.get(info_req)
         user_prog = requests.get(prog_req)
-        recent_req = requests.get(recent_req)
+        user_recent = requests.get(recent_req)
 
         usrStart = time.time()
         
         if (user_info.status_code == 200):
             # user info data retrieved
             user_info_data = user_info.json()["data"]
-            info_df.loc[len(info_df)] = [user_info_data["_id"], user_info_data["username"], row["rank"], user_info_data["country"], user_info_data["ts"], user_info_data["xp"], user_info_data["ar"], user_info_data["gamesplayed"], user_info_data["gameswon"], user_info_data["gametime"], [], []]
+            info_df.loc[len(info_df)] = [user_info_data["_id"], user_info_data["username"], row["rank"], user_info_data["country"], user_info_data["ts"], user_info_data["xp"], user_info_data["ar"], user_info_data["gamesplayed"], user_info_data["gameswon"], user_info_data["gametime"], None, None]
 
             if user_prog.status_code == 200:
                 # user progression data retrieved
                 prog_data = user_prog.json()["data"]["entries"]
 
+                prog_recs = []
                 for rec in prog_data:
-                    records_df[len(records_df)] = processRecord(rec, row["user_id"])
+                    records_df = pd.concat([records_df, pd.DataFrame(processRecord(rec, row["user_id"]), index=[0])], ignore_index=True)
+                    prog_recs.append(rec["_id"])
+                # print(info_df.at[i, "records_progression"])
+                info_df.at[i, "records_progression"] = prog_recs
+            
+            if user_recent.status_code == 200:
+                recent_data = user_recent.json()["data"]["entries"]
+
+                recent_recs = []
+                for rec in recent_data:
+                    records_df = pd.concat([records_df, pd.DataFrame(processRecord(rec, row["user_id"]), index=[0])], ignore_index=True)
+                    recent_recs.append(rec["_id"])
+                info_df.at[i, "records_recent"] = recent_recs
         
         
         # record end time
@@ -152,11 +195,18 @@ def getUserData(leaderboard_file, top_rank, bottom_rank):
         if speed_limiter*3 > (usrEnd - usrStart):
             # speed limit has not been met, sleep for remaining time
             time.sleep(speed_limiter*3 - (usrEnd - usrStart))
+    file_suffix = "_"+str(best_rank)+"-"+str(worst_rank)+"_"+leaderboard_file.split(".")[0].split("_")[2]+".csv"
+    info_fl = open("out/user_info"+file_suffix, "w")
+    record_fl = open("out/records"+file_suffix, "w")
+
+    info_df.to_csv(info_fl)
+    records_df.to_csv(record_fl)
 
         
 
 
 # TODO call this with page size 100 and infinite record limit to get data on the full leaderboard
-getLeaderboard(20,10)
+# getLeaderboard(20,10)
 
 # TODO iterate through user list and download summary data as well as individual game records (progression?)
+getUserData("out/user_leaderboard_1730174943.csv", 1, 10)
