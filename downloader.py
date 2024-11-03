@@ -134,12 +134,36 @@ def processRecord(record_json, user_id):
     # print(record_row)
     return record_row
 
+def getUserRecords(records_df, recent_req, user_id, last_prisecter=""):
+    req_url = recent_req
+    if last_prisecter != "":
+        req_url += "&after="+last_prisecter
+    
+    user_recent = requests.get(req_url)
+    pgStart = time.time()
+
+    if user_recent.status_code == 200:
+        recent_data = user_recent.json()["data"]["entries"]
+        if len(recent_data) < 1:
+            return records_df
+        for rec in recent_data:
+            records_df = pd.concat([records_df, pd.DataFrame(processRecord(rec, user_id), index=[0])], ignore_index=True)
+        
+        last_prisecter = str(rec["p"]["pri"])+":"+str(rec["p"]["sec"])+":"+str(rec["p"]["ter"])
+
+    pgEnd = time.time()
+    # determine if the speed limit has been met
+    if speed_limiter > (pgEnd - pgStart):
+        # speed limit has not been met, sleep for remaining time
+        time.sleep(speed_limiter - (pgEnd - pgStart))
+
+    return getUserRecords(records_df, recent_req, user_id, last_prisecter)
 
 def getUserData(leaderboard_file, best_rank, worst_rank):
     session_id = "CSCI4502_"+str(random.randbytes(16).hex()) # TODO check that this actually works
     headers = {"X-Session-ID":session_id}
 
-    info_df = pd.DataFrame(columns=["id", "username", "rank", "country", "created_date", "xp", "achievement_rating", "TL_games_played", "TL_games_won", "TL_play_time", "records_progression", "records_recent"])
+    info_df = pd.DataFrame(columns=["id", "username", "rank", "country", "created_date", "xp", "achievement_rating", "TL_games_played", "TL_games_won", "TL_play_time", "num_records"])
     records_df = pd.DataFrame(columns=["record_id", "user_id", "datetime", "current_pb", "ever_pb", "final_time", "pps", "inputs", "score", "pieces_placed", "singles", "doubles", "triples", "quads", "all_clears", "finesse_faults", "finesse_perf"])
     
     leaderboard = pd.read_csv(leaderboard_file)
@@ -153,48 +177,32 @@ def getUserData(leaderboard_file, best_rank, worst_rank):
         row = leaderboard.loc[i]
         # print(row)
         info_req = api_base+ user_info_endpoint+"/"+row["user_id"]
-        prog_req = info_req+user_records_endpoint+"/progression"
-        recent_req = info_req+user_records_endpoint+"/recent"
+        recent_req = info_req+user_records_endpoint+"/recent?limit=100"
 
         user_info = requests.get(info_req)
-        user_prog = requests.get(prog_req)
-        user_recent = requests.get(recent_req)
 
         usrStart = time.time()
         
-        if (user_info.status_code == 200):
+        if user_info.status_code == 200:
             # user info data retrieved
             user_info_data = user_info.json()["data"]
             info_df.loc[len(info_df)] = [user_info_data["_id"], user_info_data["username"], row["rank"], user_info_data["country"], user_info_data["ts"], user_info_data["xp"], user_info_data["ar"], user_info_data["gamesplayed"], user_info_data["gameswon"], user_info_data["gametime"], None, None]
-
-            if user_prog.status_code == 200:
-                # user progression data retrieved
-                prog_data = user_prog.json()["data"]["entries"]
-
-                prog_recs = []
-                for rec in prog_data:
-                    records_df = pd.concat([records_df, pd.DataFrame(processRecord(rec, row["user_id"]), index=[0])], ignore_index=True)
-                    prog_recs.append(rec["_id"])
-                # print(info_df.at[i, "records_progression"])
-                info_df.at[i, "records_progression"] = prog_recs
             
-            if user_recent.status_code == 200:
-                recent_data = user_recent.json()["data"]["entries"]
+            # record end time
+            usrEnd = time.time()        
 
-                recent_recs = []
-                for rec in recent_data:
-                    records_df = pd.concat([records_df, pd.DataFrame(processRecord(rec, row["user_id"]), index=[0])], ignore_index=True)
-                    recent_recs.append(rec["_id"])
-                info_df.at[i, "records_recent"] = recent_recs
+            # determine if the speed limit has been met
+            if speed_limiter > (usrEnd - usrStart):
+                # speed limit has not been met, sleep for remaining time
+                time.sleep(speed_limiter - (usrEnd - usrStart))
+            
+            # get records
+            records_df = getUserRecords(records_df, recent_req, row["user_id"])
+
+            
+            info_df.at[i, "num_records"] = len(records_df["record_id"].loc[records_df["user_id"] == row["user_id"]])
         
         
-        # record end time
-        usrEnd = time.time()        
-
-        # determine if the speed limit has been met
-        if speed_limiter*3 > (usrEnd - usrStart):
-            # speed limit has not been met, sleep for remaining time
-            time.sleep(speed_limiter*3 - (usrEnd - usrStart))
     file_suffix = "_"+str(best_rank)+"-"+str(worst_rank)+"_"+leaderboard_file.split(".")[0].split("_")[2]+".csv"
     info_fl = open("out/user_info"+file_suffix, "w")
     record_fl = open("out/records"+file_suffix, "w")
@@ -209,4 +217,4 @@ def getUserData(leaderboard_file, best_rank, worst_rank):
 # getLeaderboard(20,10)
 
 # TODO iterate through user list and download summary data as well as individual game records (progression?)
-getUserData("out/user_leaderboard_1730174943.csv", 1, 10)
+getUserData("out/user_leaderboard_1730174943.csv", 1, 2)
