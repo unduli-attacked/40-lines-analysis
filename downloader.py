@@ -117,30 +117,29 @@ def processRecord(record_json, user_id):
     # print(record_row)
     return record_row
 
-def getUserRecords(records_df, recent_req, user_id, last_prisecter=""):
-    req_url = recent_req
-    if last_prisecter != "":
-        req_url += "&after="+last_prisecter
-    
-    user_recent = requests.get(req_url, headers=headers)
-    pgStart = time.time()
-
-    if user_recent.status_code == 200:
-        recent_data = user_recent.json()["data"]["entries"]
-        if len(recent_data) < 1:
-            return records_df
-        for rec in recent_data:
-            records_df = pd.concat([records_df, pd.DataFrame(processRecord(rec, user_id), index=[0])], ignore_index=True)
+def getUserRecords(records_df, recent_req, user_id, last_prisecter="", self=None):
+    while True:
+        req_url = recent_req
+        if last_prisecter != "":
+            req_url += "&after="+last_prisecter
         
-        last_prisecter = str(rec["p"]["pri"])+":"+str(rec["p"]["sec"])+":"+str(rec["p"]["ter"])
+        user_recent = requests.get(req_url, headers=headers)
+        pgStart = time.time()
 
-    pgEnd = time.time()
-    # determine if the speed limit has been met
-    if speed_limiter > (pgEnd - pgStart):
-        # speed limit has not been met, sleep for remaining time
-        time.sleep(speed_limiter - (pgEnd - pgStart))
+        if user_recent.status_code == 200:
+            recent_data = user_recent.json()["data"]["entries"]
+            if len(recent_data) < 1:
+                return records_df
+            for rec in recent_data:
+                records_df = pd.concat([records_df, pd.DataFrame(processRecord(rec, user_id), index=[0])], ignore_index=True)
+            
+            last_prisecter = str(rec["p"]["pri"])+":"+str(rec["p"]["sec"])+":"+str(rec["p"]["ter"])
 
-    return getUserRecords(records_df, recent_req, user_id, last_prisecter)
+        pgEnd = time.time()
+        # determine if the speed limit has been met
+        if speed_limiter > (pgEnd - pgStart):
+            # speed limit has not been met, sleep for remaining time
+            time.sleep(speed_limiter - (pgEnd - pgStart))
 
 def getUserData(leaderboard_file, rank_list):
 
@@ -183,7 +182,7 @@ def getUserData(leaderboard_file, rank_list):
             info_df["num_records"].loc[info_df["id"] == row["user_id"]] = len(records_df["record_id"].loc[records_df["user_id"] == row["user_id"]])
         
         
-    file_suffix = "_"+str(min(rank_list))+"-"+str(max(rank_list))+"_"+leaderboard_file.split(".")[0].split("_")[2]+".csv"
+    file_suffix = "_"+str(min(rank_list))+"-"+str(max(rank_list))+"_"+leaderboard_file.split(".")[0].split("/")[1].split("_")[2]+".csv"
     info_fl = open(out_folder+"/user_info"+file_suffix, "w")
     record_fl = open(out_folder+"/records"+file_suffix, "w")
 
@@ -236,6 +235,6 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
 # TODO iterate through user list and download summary data as well as individual game records (progression?)
 # getUserData("out_test/user_leaderboard_1730666309.csv", 1, 5)
 
-genRankSets("out_test/user_leaderboard_1730666309.csv")
+# genRankSets("out_test/user_leaderboard_1730666309.csv")
 
-# downloadMyRankSets("out_test/user_leaderboard_1730666309.csv", "jay", 5)
+downloadMyRankSets("out_test/user_leaderboard_1730666309.csv", "jay", 5)
