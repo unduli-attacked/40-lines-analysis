@@ -1,7 +1,7 @@
 import pandas as pd
 import math
 
-
+set_file = "sets/test"
 def genRankSets(leaderboard_file, cohort_size=10):
     rank_sets = []
     leaderboard = pd.read_csv(leaderboard_file, index_col=0)
@@ -17,17 +17,17 @@ def genRankSets(leaderboard_file, cohort_size=10):
     
     splits = [math.floor(len(rank_sets)/3),(math.floor(len(rank_sets)/3)*2),len(rank_sets)]
     
-    fl_jay = open("sets/jay_rank_sets.csv", "w")
+    fl_jay = open(set_file+"/jay_rank_sets.csv", "w")
     for i in range(0,splits[0]):
         fl_jay.write((','.join(str(j) for j in rank_sets[i])+"\n"))
     fl_jay.close()
     
-    fl_joseph = open("sets/joseph_rank_sets.csv", "w")
+    fl_joseph = open(set_file+"/joseph_rank_sets.csv", "w")
     for i in range(splits[0], splits[1]):
         fl_joseph.write((','.join(str(j) for j in rank_sets[i])+"\n"))
     fl_joseph.close()
 
-    fl_henry = open("sets/henry_rank_sets.csv", "w")
+    fl_henry = open(set_file+"/henry_rank_sets.csv", "w")
     for i in range(splits[1], splits[2]):
         fl_henry.write((','.join(str(j) for j in rank_sets[i])+"\n"))
     fl_henry.close()
@@ -48,4 +48,4 @@ def clean_leaderboard(leaderboard_file):
     out_file.close()
 
 
-genRankSets("out/user_leaderboard_1730705078.csv")
+genRankSets("out_test/user_leaderboard_1730666309_clean.csv")

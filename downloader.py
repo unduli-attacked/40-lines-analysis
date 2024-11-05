@@ -16,7 +16,7 @@ user_records_endpoint = "/records/40l" # APPEND TO USER INFO
 speed_limiter = 1 # time to sleep between requests, in seconds
 session_id = "CSCI4502_"+str(random.randbytes(16).hex()) # TODO check that this actually works
 headers = {"X-Session-ID":session_id}
-out_folder = "out"
+out_folder = "out_test"
 
 
 # download the leaderboard
@@ -214,7 +214,7 @@ def getUserData(leaderboard_file, rank_list):
 
 def downloadMyRankSets(leaderboard_file, name, start_at=1):
     rank_sets = []
-    set_fl = open("sets/"+name+"_rank_sets.csv", "r")
+    set_fl = open("sets/test/"+name+"_rank_sets.csv", "r")
     line_count = 0
     for line in set_fl:
         line_count += 1
@@ -227,5 +227,5 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
 
 
 
-downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="jay")
+downloadMyRankSets(leaderboard_file="out_test/user_leaderboard_1730666309_clean.csv", name="henry")
 # getUserData("out_test/user_leaderboard_1730666309_clean.csv", [9,10,11])
