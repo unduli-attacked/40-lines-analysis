@@ -16,6 +16,7 @@ user_records_endpoint = "/records/40l" # APPEND TO USER INFO
 speed_limiter = 1 # time to sleep between requests, in seconds
 session_id = "CSCI4502_"+str(random.randbytes(16).hex()) # TODO check that this actually works
 headers = {"X-Session-ID":session_id}
+out_folder = "out_test"
 
 
 # download the leaderboard
@@ -31,7 +32,7 @@ def getLeaderboard(num_records=math.inf, page_size=100):
     leaderboard_df = pd.DataFrame(columns=["user_id", "user_name", "rank", "final_time", "record_id", "prisecter"])
 
     # initialize output files
-    out_summ_name = "out/user_leaderboard_"+str(math.floor(time.time()))+".csv"
+    out_summ_name = out_folder+"/user_leaderboard_"+str(math.floor(time.time()))+".csv"
     
     # prepare to loop
     last_prisecter = ""
@@ -141,16 +142,16 @@ def getUserRecords(records_df, recent_req, user_id, last_prisecter=""):
 
     return getUserRecords(records_df, recent_req, user_id, last_prisecter)
 
-def getUserData(leaderboard_file, best_rank, worst_rank):
+def getUserData(leaderboard_file, rank_list):
 
     info_df = pd.DataFrame(columns=["id", "username", "rank", "country", "created_date", "xp", "achievement_rating", "TL_games_played", "TL_games_won", "TL_play_time", "num_records"])
     records_df = pd.DataFrame(columns=["record_id", "user_id", "datetime", "current_pb", "ever_pb", "final_time", "pps", "inputs", "score", "pieces_placed", "singles", "doubles", "triples", "quads", "all_clears", "finesse_faults", "finesse_perf"])
     
     leaderboard = pd.read_csv(leaderboard_file, index_col=0)
     # print(leaderboard.info())
-    leaderboard = leaderboard.loc[leaderboard["rank"] <= worst_rank]
+    leaderboard = leaderboard.loc[leaderboard["rank"].isin(rank_list)]
     # print(leaderboard.info())
-    leaderboard = leaderboard.loc[leaderboard["rank"] >= best_rank]
+    # leaderboard = leaderboard.loc[leaderboard["rank"] >= best_rank]
     # print(leaderboard.info())
 
     for i in leaderboard.index:
@@ -178,23 +179,63 @@ def getUserData(leaderboard_file, best_rank, worst_rank):
             
             # get records
             records_df = getUserRecords(records_df, recent_req, row["user_id"])
-
             
-            info_df.at[i, "num_records"] = len(records_df["record_id"].loc[records_df["user_id"] == row["user_id"]])
+            info_df["num_records"].loc[info_df["id"] == row["user_id"]] = len(records_df["record_id"].loc[records_df["user_id"] == row["user_id"]])
         
         
-    file_suffix = "_"+str(best_rank)+"-"+str(worst_rank)+"_"+leaderboard_file.split(".")[0].split("_")[2]+".csv"
-    info_fl = open("out/user_info"+file_suffix, "w")
-    record_fl = open("out/records"+file_suffix, "w")
+    file_suffix = "_"+str(min(rank_list))+"-"+str(max(rank_list))+"_"+leaderboard_file.split(".")[0].split("_")[2]+".csv"
+    info_fl = open(out_folder+"/user_info"+file_suffix, "w")
+    record_fl = open(out_folder+"/records"+file_suffix, "w")
 
-    info_df.to_csv(info_fl)
-    records_df.to_csv(record_fl)
-
-        
+    info_df.to_csv(info_fl, lineterminator="\n")
+    records_df.to_csv(record_fl, lineterminator="\n")
 
 
-# TODO call this with page size 100 and infinite record limit to get data on the full leaderboard
-# getLeaderboard(20,10)
+def genRankSets(leaderboard_file):
+    rank_sets = []
+    leaderboard = pd.read_csv(leaderboard_file, index_col=0)
+    leaderboard["time_cohort"] = leaderboard["final_time"].apply(lambda x: math.floor(x/100))
+    
+    for cohort_time in leaderboard["time_cohort"].unique():
+        # split into cohorts by final time in seconds
+        # assuming a maximum time of 5min this should be ~300 cohorts
+        cohort_set = leaderboard["rank"].loc[leaderboard["time_cohort"] == cohort_time]
+        rank_sets.append(cohort_set.sample(n=min(10, len(cohort_set))).to_list())
+    
+    splits = [math.floor(len(rank_sets)/3),(math.floor(len(rank_sets)/3)*2),len(rank_sets)]
+    
+    fl_henry = open("sets/henry_rank_sets.csv", "w")
+    for i in range(0,splits[0]):
+        fl_henry.write((','.join(str(j) for j in rank_sets[i])+"\n"))
+    fl_henry.close()
+    
+    fl_joseph = open("sets/joseph_rank_sets.csv", "w")
+    for i in range(splits[0], splits[1]):
+        fl_joseph.write((','.join(str(j) for j in rank_sets[i])+"\n"))
+    fl_joseph.close()
+
+    fl_jay = open("sets/jay_rank_sets.csv", "w")
+    for i in range(splits[1], splits[2]):
+        fl_jay.write((','.join(str(j) for j in rank_sets[i])+"\n"))
+    fl_jay.close()
+
+def downloadMyRankSets(leaderboard_file, name, start_at=1):
+    rank_sets = []
+    set_fl = open("sets/"+name+"_rank_sets.csv", "r")
+    line_count = 0
+    for line in set_fl:
+        line_count += 1
+        if line_count >= start_at:
+            rank_sets.append(list(map(lambda x: int(x), line.strip().split(","))))
+    set_fl.close()
+
+    for rank_set in rank_sets:
+        getUserData(leaderboard_file, rank_set)
+    # TODO call getUserData on all sets
 
 # TODO iterate through user list and download summary data as well as individual game records (progression?)
-getUserData("out/user_leaderboard_1730666309.csv", 1, 5)
+# getUserData("out_test/user_leaderboard_1730666309.csv", 1, 5)
+
+genRankSets("out_test/user_leaderboard_1730666309.csv")
+
+# downloadMyRankSets("out_test/user_leaderboard_1730666309.csv", "jay", 5)
