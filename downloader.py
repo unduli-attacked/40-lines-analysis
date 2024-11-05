@@ -16,7 +16,7 @@ user_records_endpoint = "/records/40l" # APPEND TO USER INFO
 speed_limiter = 1 # time to sleep between requests, in seconds
 session_id = "CSCI4502_"+str(random.randbytes(16).hex()) # TODO check that this actually works
 headers = {"X-Session-ID":session_id}
-out_folder = "out_test"
+out_folder = "out"
 
 
 # download the leaderboard
@@ -187,9 +187,9 @@ def getUserData(leaderboard_file, rank_list):
             records_df = getUserRecords(records_df, recent_req, row["user_id"])
             
             info_df["num_records"].loc[info_df["id"] == row["user_id"]] = len(records_df["record_id"].loc[records_df["user_id"] == row["user_id"]])
+    cohort = math.floor(row["final_time"]/1000)
         
-        
-    file_suffix = "_"+str(min(rank_list))+"-"+str(max(rank_list))+"_"+leaderboard_file.split(".")[0].split("/")[1].split("_")[2]+".csv"
+    file_suffix = "_cohort-"+str(cohort)+"_"+leaderboard_file.split(".")[0].split("/")[1].split("_")[2]+".csv"
     info_fl = open(out_folder+"/user_info"+file_suffix, "w")
     record_fl = open(out_folder+"/records"+file_suffix, "w")
 
