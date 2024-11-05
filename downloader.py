@@ -190,34 +190,6 @@ def getUserData(leaderboard_file, rank_list):
     records_df.to_csv(record_fl, lineterminator="\n")
 
 
-def genRankSets(leaderboard_file):
-    rank_sets = []
-    leaderboard = pd.read_csv(leaderboard_file, index_col=0)
-    leaderboard["time_cohort"] = leaderboard["final_time"].apply(lambda x: math.floor(x/100))
-    
-    for cohort_time in leaderboard["time_cohort"].unique():
-        # split into cohorts by final time in seconds
-        # assuming a maximum time of 5min this should be ~300 cohorts
-        cohort_set = leaderboard["rank"].loc[leaderboard["time_cohort"] == cohort_time]
-        rank_sets.append(cohort_set.sample(n=min(10, len(cohort_set))).to_list())
-    
-    splits = [math.floor(len(rank_sets)/3),(math.floor(len(rank_sets)/3)*2),len(rank_sets)]
-    
-    fl_henry = open("sets/henry_rank_sets.csv", "w")
-    for i in range(0,splits[0]):
-        fl_henry.write((','.join(str(j) for j in rank_sets[i])+"\n"))
-    fl_henry.close()
-    
-    fl_joseph = open("sets/joseph_rank_sets.csv", "w")
-    for i in range(splits[0], splits[1]):
-        fl_joseph.write((','.join(str(j) for j in rank_sets[i])+"\n"))
-    fl_joseph.close()
-
-    fl_jay = open("sets/jay_rank_sets.csv", "w")
-    for i in range(splits[1], splits[2]):
-        fl_jay.write((','.join(str(j) for j in rank_sets[i])+"\n"))
-    fl_jay.close()
-
 def downloadMyRankSets(leaderboard_file, name, start_at=1):
     rank_sets = []
     set_fl = open("sets/"+name+"_rank_sets.csv", "r")
@@ -235,6 +207,6 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
 # TODO iterate through user list and download summary data as well as individual game records (progression?)
 # getUserData("out_test/user_leaderboard_1730666309.csv", 1, 5)
 
-# genRankSets("out_test/user_leaderboard_1730666309.csv")
+
 
 downloadMyRankSets("out_test/user_leaderboard_1730666309.csv", "jay", 5)
