@@ -21,9 +21,9 @@ headers = {"X-Session-ID":session_id}
 # download the leaderboard
 def getLeaderboard(num_records=math.inf, page_size=100):
     # check inputs
-    if num_records % page_size != 0:
-        print("num_records must be divisible by page_size")
-        return None
+    # if num_records % page_size != 0:
+    #     print("num_records must be divisible by page_size")
+    #     return None
     if page_size < 1 or page_size > 100:
         print("invalid page size")
         return None
@@ -75,6 +75,12 @@ def getLeaderboard(num_records=math.inf, page_size=100):
                 }
 
                 leaderboard_df = pd.concat([leaderboard_df, pd.DataFrame(rec_row, index=[0])], ignore_index=True)
+            if rec_count % 10000 == 0:
+                # make a backup every 10k records
+                out_summ_fl = open(out_summ_name, "w")
+                leaderboard_df.to_csv(out_summ_fl, lineterminator="\n")
+                out_summ_fl.close() 
+                print(rec_count, "records, last prisecter", last_prisecter)
         else:
             # no records were returned, something is wrong or we've hit the bottom
             fail=True
@@ -89,7 +95,8 @@ def getLeaderboard(num_records=math.inf, page_size=100):
     
     # write the leaderboard to a file
     out_summ_fl = open(out_summ_name, "w")
-    leaderboard_df.to_csv(out_summ_fl)
+    leaderboard_df.to_csv(out_summ_fl, lineterminator="\n")
+    out_summ_fl.close()
 
 def processRecord(record_json, user_id):
     results = record_json["results"]
@@ -187,14 +194,14 @@ def getUserData(leaderboard_file, best_rank, worst_rank):
     info_fl = open("out/user_info"+file_suffix, "w")
     record_fl = open("out/records"+file_suffix, "w")
 
-    info_df.to_csv(info_fl)
-    records_df.to_csv(record_fl)
+    info_df.to_csv(info_fl, lineterminator="\n")
+    records_df.to_csv(record_fl, lineterminator="\n")
 
         
 
 
 # TODO call this with page size 100 and infinite record limit to get data on the full leaderboard
-# getLeaderboard(20,10)
+getLeaderboard()
 
 # TODO iterate through user list and download summary data as well as individual game records (progression?)
-getUserData("out/user_leaderboard_1730666309.csv", 1, 5)
+# getUserData("out/user_leaderboard_1730666309.csv", 1, 5)
