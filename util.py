@@ -2,7 +2,7 @@ import pandas as pd
 import math
 
 
-def genRankSets(leaderboard_file):
+def genRankSets(leaderboard_file, cohort_size=10):
     rank_sets = []
     leaderboard = pd.read_csv(leaderboard_file, index_col=0)
     leaderboard["time_cohort"] = leaderboard["final_time"].apply(lambda x: math.floor(x/1000))
@@ -11,7 +11,7 @@ def genRankSets(leaderboard_file):
         # split into cohorts by final time in seconds
         # assuming a maximum time of 5min this should be ~300 cohorts
         cohort_set = leaderboard["rank"].loc[leaderboard["time_cohort"] == cohort_time]
-        sample = cohort_set.sample(n=min(10, len(cohort_set)), random_state=1).to_list()
+        sample = cohort_set.sample(n=min(cohort_size, len(cohort_set)), random_state=1).to_list()
         sample.sort()
         rank_sets.append(sample)
     

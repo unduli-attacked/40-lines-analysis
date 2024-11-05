@@ -107,7 +107,7 @@ def processRecord(record_json, user_id):
         "user_id": user_id, 
         "datetime": record_json["ts"], 
         "current_pb": record_json["pb"], 
-        "ever_pb": record_json["oncepb"], 
+        "once_pb": record_json["oncepb"], 
         "final_time": results["stats"]["finaltime"], 
         "pps": results["aggregatestats"]["pps"], 
         "inputs": results["stats"]["inputs"], 
@@ -150,8 +150,8 @@ def getUserRecords(records_df, recent_req, user_id, last_prisecter="", self=None
 
 def getUserData(leaderboard_file, rank_list):
 
-    info_df = pd.DataFrame(columns=["id", "username", "rank", "country", "created_date", "xp", "achievement_rating", "TL_games_played", "TL_games_won", "TL_play_time", "num_records"])
-    records_df = pd.DataFrame(columns=["record_id", "user_id", "datetime", "current_pb", "ever_pb", "final_time", "pps", "inputs", "score", "pieces_placed", "singles", "doubles", "triples", "quads", "all_clears", "finesse_faults", "finesse_perf"])
+    info_df = pd.DataFrame(columns=["id", "username", "rank", "cohort", "best_time", "best_record", "country", "created_date", "xp", "achievement_rating", "TL_games_played", "TL_games_won", "TL_play_time", "num_records"])
+    records_df = pd.DataFrame(columns=["record_id", "user_id", "datetime", "current_pb", "once_pb", "final_time", "pps", "inputs", "score", "pieces_placed", "singles", "doubles", "triples", "quads", "all_clears", "finesse_faults", "finesse_perf"])
     
     leaderboard = pd.read_csv(leaderboard_file, index_col=0)
     # print(leaderboard.info())
@@ -173,7 +173,22 @@ def getUserData(leaderboard_file, rank_list):
         if user_info.status_code == 200:
             # user info data retrieved
             user_info_data = user_info.json()["data"]
-            info_df.loc[len(info_df)] = [user_info_data["_id"], user_info_data["username"], row["rank"], user_info_data["country"], user_info_data["ts"], user_info_data["xp"], user_info_data["ar"], user_info_data["gamesplayed"], user_info_data["gameswon"], user_info_data["gametime"], 0]
+            info_df.loc[len(info_df)] = {
+                "id": user_info_data["_id"], 
+                "username": user_info_data["username"], 
+                "rank": row["rank"], 
+                "cohort": math.floor(row["final_time"]/1000),
+                "best_time": row["final_time"],
+                "best_record": row["record_id"],
+                "country": user_info_data["country"], 
+                "created_date": user_info_data["ts"], 
+                "xp": user_info_data["xp"], 
+                "achievement_rating": user_info_data["ar"], 
+                "TL_games_played": user_info_data["gamesplayed"], 
+                "TL_games_won": user_info_data["gameswon"], 
+                "TL_play_time": user_info_data["gametime"], 
+                "num_records": 0
+            }
             
             # record end time
             usrEnd = time.time()        
@@ -213,3 +228,4 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
 
 
 downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="jay")
+# getUserData("out_test/user_leaderboard_1730666309_clean.csv", [9,10,11])
