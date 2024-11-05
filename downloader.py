@@ -209,11 +209,7 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
 
     for rank_set in rank_sets:
         getUserData(leaderboard_file, rank_set)
-    # TODO call getUserData on all sets
-
-# TODO iterate through user list and download summary data as well as individual game records (progression?)
-# getUserData("out_test/user_leaderboard_1730666309.csv", 1, 5)
 
 
 
-downloadMyRankSets("out_test/user_leaderboard_1730666309.csv", "jay", 5)
+downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="jay")
