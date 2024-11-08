@@ -100,29 +100,32 @@ def getLeaderboard(num_records=math.inf, page_size=100):
     out_summ_fl.close()
 
 def processRecord(record_json, user_id):
-    results = record_json["results"]
-    # FIXME this is stupid
-    record_row = {
-        "record_id": record_json["_id"], 
-        "user_id": user_id, 
-        "datetime": record_json["ts"], 
-        "current_pb": record_json["pb"], 
-        "once_pb": record_json["oncepb"], 
-        "final_time": results["stats"]["finaltime"], 
-        "pps": results["aggregatestats"]["pps"], 
-        "inputs": results["stats"]["inputs"], 
-        "score": results["stats"]["score"], 
-        "pieces_placed": results["stats"]["piecesplaced"], 
-        "singles": results["stats"]["clears"]["singles"], 
-        "doubles": results["stats"]["clears"]["doubles"], 
-        "triples": results["stats"]["clears"]["triples"], 
-        "quads": results["stats"]["clears"]["quads"], 
-        "all_clears": results["stats"]["clears"]["allclear"], 
-        "finesse_faults": results["stats"]["finesse"]["faults"], 
-        "finesse_perf": results["stats"]["finesse"]["perfectpieces"]
-    }
-    # print(record_row)
-    return record_row
+    try:
+        results = record_json["results"]
+        record_row = {
+            "record_id": record_json["_id"], 
+            "user_id": user_id, 
+            "datetime": record_json.get("ts", None), 
+            "current_pb": record_json.get("pb", False), 
+            "once_pb": record_json.get("oncepb", False), 
+            "final_time": results.get("stats", {}).get("finaltime", math.nan), 
+            "pps": results.get("aggregatestats", {}).get("pps", math.nan), 
+            "inputs": results.get("stats", {}).get("inputs", math.nan), 
+            "score": results.get("stats", {}).get("score", math.nan), 
+            "pieces_placed": results.get("stats", {}).get("piecesplaced", math.nan), 
+            "singles": results.get("stats", {}).get("clears", {}).get("singles", math.nan), 
+            "doubles": results.get("stats", {}).get("clears", {}).get("doubles", math.nan), 
+            "triples": results.get("stats", {}).get("clears", {}).get("triples", math.nan), 
+            "quads": results.get("stats", {}).get("clears", {}).get("quads", math.nan), 
+            "all_clears": results.get("stats", {}).get("clears", {}).get("allclear", math.nan), 
+            "finesse_faults": results.get("stats", {}).get("finesse", {}).get("faults", math.nan), 
+            "finesse_perf": results.get("stats", {}).get("finesse", {}).get("perfectpieces", math.nan)
+        }
+        # print(record_row)
+        return record_row
+    except Exception as e:
+        print("Failed to retrieve record for", user_id,". Error:", e)
+        return None
 
 def getUserRecords(records_df, recent_req, user_id, last_prisecter="", self=None):
     while True:
@@ -138,7 +141,9 @@ def getUserRecords(records_df, recent_req, user_id, last_prisecter="", self=None
             if len(recent_data) < 1:
                 return records_df
             for rec in recent_data:
-                records_df = pd.concat([records_df, pd.DataFrame(processRecord(rec, user_id), index=[0])], ignore_index=True)
+                ret_rec = processRecord(rec, user_id)
+                if ret_rec:
+                    records_df = pd.concat([records_df, pd.DataFrame(ret_rec, index=[0])], ignore_index=True)
             
             last_prisecter = str(rec["p"]["pri"])+":"+str(rec["p"]["sec"])+":"+str(rec["p"]["ter"])
 
@@ -172,23 +177,27 @@ def getUserData(leaderboard_file, rank_list):
         
         if user_info.status_code == 200:
             # user info data retrieved
-            user_info_data = user_info.json()["data"]
-            info_df.loc[len(info_df)] = {
-                "id": user_info_data["_id"], 
-                "username": user_info_data["username"], 
-                "rank": row["rank"], 
-                "cohort": math.floor(row["final_time"]/1000),
-                "best_time": row["final_time"],
-                "best_record": row["record_id"],
-                "country": user_info_data["country"], 
-                "created_date": user_info_data["ts"] if ("ts" in user_info_data.keys()) else "", 
-                "xp": user_info_data["xp"], 
-                "achievement_rating": user_info_data["ar"], 
-                "TL_games_played": user_info_data["gamesplayed"], 
-                "TL_games_won": user_info_data["gameswon"], 
-                "TL_play_time": user_info_data["gametime"], 
-                "num_records": 0
-            }
+            try:
+                user_info_data = user_info.json()["data"]
+                info_df.loc[len(info_df)] = {
+                    "id": user_info_data["_id"], 
+                    "username": user_info_data.get("username", None), 
+                    "rank": row["rank"], 
+                    "cohort": math.floor(row["final_time"]/1000),
+                    "best_time": row["final_time"],
+                    "best_record": row["record_id"],
+                    "country": user_info_data.get("country", None), 
+                    "created_date": user_info_data.get("ts", None), 
+                    "xp": user_info_data.get("xp", math.nan), 
+                    "achievement_rating": user_info_data.get("ar", math.nan), 
+                    "TL_games_played": user_info_data.get("gamesplayed", math.nan), 
+                    "TL_games_won": user_info_data.get("gameswon", math.nan), 
+                    "TL_play_time": user_info_data.get("gametime", math.nan), 
+                    "num_records": 0
+                }
+            except Exception as e:
+                print("Failed to retrieve user at rank", row["rank"],". Error:", e)
+                continue # skip retrieving records for this user
             
             # record end time
             usrEnd = time.time()        
