@@ -16,7 +16,7 @@ user_records_endpoint = "/records/40l" # APPEND TO USER INFO
 speed_limiter = 1 # time to sleep between requests, in seconds
 session_id = "CSCI4502_"+str(random.randbytes(16).hex()) # TODO check that this actually works
 headers = {"X-Session-ID":session_id}
-out_folder = "out_test"
+out_folder = "out"
 
 
 # download the leaderboard
@@ -181,7 +181,7 @@ def getUserData(leaderboard_file, rank_list):
                 "best_time": row["final_time"],
                 "best_record": row["record_id"],
                 "country": user_info_data["country"], 
-                "created_date": user_info_data["ts"], 
+                "created_date": user_info_data["ts"] if ("ts" in user_info_data.keys()) else "", 
                 "xp": user_info_data["xp"], 
                 "achievement_rating": user_info_data["ar"], 
                 "TL_games_played": user_info_data["gamesplayed"], 
@@ -214,7 +214,7 @@ def getUserData(leaderboard_file, rank_list):
 
 def downloadMyRankSets(leaderboard_file, name, start_at=1):
     rank_sets = []
-    set_fl = open("sets/test/"+name+"_rank_sets.csv", "r")
+    set_fl = open("sets/"+name+"_rank_sets.csv", "r")
     line_count = 0
     for line in set_fl:
         line_count += 1
@@ -227,5 +227,5 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
 
 
 
-downloadMyRankSets(leaderboard_file="out_test/user_leaderboard_1730666309_clean.csv", name="henry")
+downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="jay", start_at=4)
 # getUserData("out_test/user_leaderboard_1730666309_clean.csv", [9,10,11])

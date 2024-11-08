@@ -1,7 +1,7 @@
 import pandas as pd
 import math
 
-set_file = "sets/test"
+set_file = "sets"
 def genRankSets(leaderboard_file, cohort_size=10):
     rank_sets = []
     leaderboard = pd.read_csv(leaderboard_file, index_col=0)
@@ -48,4 +48,5 @@ def clean_leaderboard(leaderboard_file):
     out_file.close()
 
 
-genRankSets("out_test/user_leaderboard_1730666309_clean.csv")
+genRankSets("out/user_leaderboard_1730705078.csv")
+
