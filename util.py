@@ -1,5 +1,6 @@
 import pandas as pd
 import math
+import os
 
 set_file = "sets"
 def genRankSets(leaderboard_file, cohort_size=10):
@@ -47,6 +48,29 @@ def clean_leaderboard(leaderboard_file):
     df.to_csv(out_file, lineterminator="\n")
     out_file.close()
 
+def compileData(out_folder, records=True):
+    user_df = pd.DataFrame()
+    if records:
+        record_df = pd.DataFrame()
+    for filename in os.listdir(out_folder):
+        if filename.startswith("user_info"):
+            # this is a user file
+            user_df = pd.concat([user_df, pd.read_csv(out_folder+"/"+filename, index_col=[0])], ignore_index=True)
+        elif records and filename.startswith("records"):
+            # this is a records file
+            record_df = pd.concat([record_df, pd.read_csv(out_folder+"/"+filename, index_col=[0])], ignore_index=True)
 
-genRankSets("out/user_leaderboard_1730705078.csv")
+    file_suffix = "_cohorts_"+str(user_df["cohort"].min())+"-"+str(user_df["cohort"].max())+".csv"
+
+    user_df.sort_values(["rank"], ignore_index=True, inplace=True)
+    user_fl = open(out_folder+"/compiled_user_info"+file_suffix, "w")
+    user_df.to_csv(user_fl, lineterminator="\n")
+    
+    if records:
+        record_df.sort_values(["final_time"], ignore_index=True, inplace=True)
+        record_fl = open(out_folder+"/compiled_records"+file_suffix, "w")
+        record_df.to_csv(record_fl, lineterminator="\n")
+
+# genRankSets("out/user_leaderboard_1730705078.csv")
+compileData("out_test")
 
