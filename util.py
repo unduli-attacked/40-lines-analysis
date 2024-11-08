@@ -72,5 +72,5 @@ def compileData(out_folder, records=True):
         record_df.to_csv(record_fl, lineterminator="\n")
 
 # genRankSets("out/user_leaderboard_1730705078.csv")
-compileData("out_test")
+compileData("out")
 
