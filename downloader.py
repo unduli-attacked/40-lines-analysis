@@ -236,5 +236,5 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
 
 
 
-downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="jay", start_at=10)
+downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="henry")
 # getUserData("out_test/user_leaderboard_1730666309_clean.csv", [9,10,11])
