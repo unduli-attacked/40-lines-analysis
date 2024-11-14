@@ -33,6 +33,43 @@ def genRankSets(leaderboard_file, cohort_size=10):
         fl_henry.write((','.join(str(j) for j in rank_sets[i])+"\n"))
     fl_henry.close()
 
+def genCompleteSets(leaderboard_file, user_info_file):
+    leaderboard = pd.read_csv(leaderboard_file, index_col=[0])
+    existing_recs = pd.read_csv(user_info_file, index_col=[0])
+
+    # drop duplicates
+    leaderboard_rank = leaderboard["rank"].loc[~leaderboard["rank"].isin(existing_recs["rank"])].tolist()
+    print(str(leaderboard_rank[0]))
+    splits = [math.floor(len(leaderboard_rank)/3),(math.floor(len(leaderboard_rank)/3)*2),len(leaderboard_rank)]
+    print(splits)
+
+    fl_jay = open(set_file+"/jay_rank_sets.csv", "w")
+    tmpStr = ""
+    for i in range(0,splits[0]):
+        tmpStr += str(leaderboard_rank[i])+","
+        if (i+1) % 15 == 0:
+            fl_jay.write(tmpStr.strip(",")+"\n")
+            tmpStr = ""
+    fl_jay.close()
+    
+    fl_joseph = open(set_file+"/joseph_rank_sets.csv", "w")
+    tmpStr = ""
+    for i in range(splits[0], splits[1]):
+        tmpStr += str(leaderboard_rank[i])+","
+        if (i+1) % 15 == 0:
+            fl_joseph.write(tmpStr.strip(",")+"\n")
+            tmpStr = ""
+    fl_joseph.close()
+
+    fl_henry = open(set_file+"/henry_rank_sets.csv", "w")
+    tmpStr = ""
+    for i in range(splits[1], splits[2]):
+        tmpStr += str(leaderboard_rank[i])+","
+        if (i+1) % 15 == 0:
+            fl_henry.write(tmpStr.strip(",")+"\n")
+            tmpStr = ""
+    fl_henry.close()
+
 def clean_leaderboard(leaderboard_file):
     df = pd.read_csv(leaderboard_file, index_col=[0])
     print(df.head())
@@ -49,18 +86,19 @@ def clean_leaderboard(leaderboard_file):
     out_file.close()
 
 def compileData(out_folder, records=True):
+    out_sep = out_folder+"/out_sep"
     user_df = pd.DataFrame()
     if records:
         record_df = pd.DataFrame()
-    for filename in os.listdir(out_folder):
+    for filename in os.listdir(out_sep):
         if filename.startswith("user_info"):
             # this is a user file
-            user_df = pd.concat([user_df, pd.read_csv(out_folder+"/"+filename, index_col=[0])], ignore_index=True)
+            user_df = pd.concat([user_df, pd.read_csv(out_sep+"/"+filename, index_col=[0])], ignore_index=True)
         elif records and filename.startswith("records"):
             # this is a records file
-            record_df = pd.concat([record_df, pd.read_csv(out_folder+"/"+filename, index_col=[0])], ignore_index=True)
+            record_df = pd.concat([record_df, pd.read_csv(out_sep+"/"+filename, index_col=[0])], ignore_index=True)
 
-    file_suffix = "_cohorts_"+str(user_df["cohort"].min())+"-"+str(user_df["cohort"].max())+".csv"
+    file_suffix = "_ranks_"+str(user_df["rank"].min())+"-"+str(user_df["rank"].max())+".csv"
 
     user_df.sort_values(["rank"], ignore_index=True, inplace=True)
     user_fl = open(out_folder+"/compiled_user_info"+file_suffix, "w")
@@ -73,4 +111,4 @@ def compileData(out_folder, records=True):
 
 # genRankSets("out/user_leaderboard_1730705078.csv")
 compileData("out")
-
+# genCompleteSets("out/user_leaderboard_1730705078.csv", "out/compiled_user_info_cohorts_13-353.csv")

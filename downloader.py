@@ -5,6 +5,7 @@ import time
 import math
 import pandas as pd
 import warnings
+import os
 
 warnings.filterwarnings("ignore")
 
@@ -133,7 +134,11 @@ def getUserRecords(records_df, recent_req, user_id, last_prisecter="", self=None
         if last_prisecter != "":
             req_url += "&after="+last_prisecter
         
-        user_recent = requests.get(req_url, headers=headers)
+        try:
+            user_recent = requests.get(req_url, headers=headers)
+        except Exception as e:
+            print("Record request for user", user_id, "at prisecter", last_prisecter, "failed. Error:", e)
+            continue
         pgStart = time.time()
 
         if user_recent.status_code == 200:
@@ -155,6 +160,8 @@ def getUserRecords(records_df, recent_req, user_id, last_prisecter="", self=None
 
 def getUserData(leaderboard_file, rank_list):
 
+    print("Downloading set", rank_list)
+
     info_df = pd.DataFrame(columns=["id", "username", "rank", "cohort", "best_time", "best_record", "country", "created_date", "xp", "achievement_rating", "TL_games_played", "TL_games_won", "TL_play_time", "num_records"])
     records_df = pd.DataFrame(columns=["record_id", "user_id", "datetime", "current_pb", "once_pb", "final_time", "pps", "inputs", "score", "pieces_placed", "singles", "doubles", "triples", "quads", "all_clears", "finesse_faults", "finesse_perf"])
     
@@ -167,11 +174,15 @@ def getUserData(leaderboard_file, rank_list):
 
     for i in leaderboard.index:
         row = leaderboard.loc[i]
-        print(row)
+        # print(row)
         info_req = api_base+ user_info_endpoint+"/"+row["user_id"]
         recent_req = info_req+user_records_endpoint+"/recent?limit=100"
 
-        user_info = requests.get(info_req, headers=headers)
+        try:
+            user_info = requests.get(info_req, headers=headers)
+        except Exception as e:
+            print("Info request failed for user", row["user_id"], ". Error:", e)
+            continue
 
         usrStart = time.time()
         
@@ -211,11 +222,14 @@ def getUserData(leaderboard_file, rank_list):
             records_df = getUserRecords(records_df, recent_req, row["user_id"])
             
             info_df["num_records"].loc[info_df["id"] == row["user_id"]] = len(records_df["record_id"].loc[records_df["user_id"] == row["user_id"]])
-    cohort = math.floor(row["final_time"]/1000)
         
-    file_suffix = "_cohort-"+str(cohort)+"_"+leaderboard_file.split(".")[0].split("/")[1].split("_")[2]+".csv"
-    info_fl = open(out_folder+"/user_info"+file_suffix, "w")
-    record_fl = open(out_folder+"/records"+file_suffix, "w")
+    file_suffix = "_ranks_"+str(info_df["rank"].min())+"-"+str(info_df["rank"].max())+"_"+leaderboard_file.split(".")[0].split("/")[1].split("_")[2]+".csv"
+    
+    if not os.path.isdir(out_folder+"/out_sep"):
+        os.mkdir(out_folder+"/out_sep")
+    
+    info_fl = open(out_folder+"/out_sep/user_info"+file_suffix, "w")
+    record_fl = open(out_folder+"/out_sep/records"+file_suffix, "w")
 
     info_df.to_csv(info_fl, lineterminator="\n")
     records_df.to_csv(record_fl, lineterminator="\n")
@@ -235,6 +249,6 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
         getUserData(leaderboard_file, rank_set)
 
 
-
-downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="henry")
-# getUserData("out_test/user_leaderboard_1730666309_clean.csv", [9,10,11])
+# TO DOWNLOAD: set "name" to your name and run the program
+# if you need to stop and restart: ctrl+C the program. when you restart, change "start_at" to the LINE NUMBER (from your sets file) of the set you'd like to start at
+downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="NAME HERE", start_at=1)
