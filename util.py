@@ -90,14 +90,20 @@ def compileData(out_folder, records=True):
     user_df = pd.DataFrame()
     if records:
         record_df = pd.DataFrame()
+    print("Reading files")
     for filename in os.listdir(out_sep):
-        if filename.startswith("user_info"):
-            # this is a user file
-            user_df = pd.concat([user_df, pd.read_csv(out_sep+"/"+filename, index_col=[0])], ignore_index=True)
-        elif records and filename.startswith("records"):
-            # this is a records file
-            record_df = pd.concat([record_df, pd.read_csv(out_sep+"/"+filename, index_col=[0])], ignore_index=True)
+        # print("Reading file", filename)
+        try:
+            if filename.startswith("user_info"):
+                # this is a user file
+                user_df = pd.concat([user_df, pd.read_csv(out_sep+"/"+filename, index_col=[0])], ignore_index=True)
+            elif records and filename.startswith("records"):
+                # this is a records file
+                record_df = pd.concat([record_df, pd.read_csv(out_sep+"/"+filename, index_col=[0])], ignore_index=True)
+        except Exception as e:
+            print("Error reading file", filename,":", e)
 
+    print("Files read")
     file_suffix = "_ranks_"+str(user_df["rank"].min())+"-"+str(user_df["rank"].max())+".csv"
 
     user_df.sort_values(["rank"], ignore_index=True, inplace=True)
