@@ -115,6 +115,26 @@ def compileData(out_folder, records=True):
         record_fl = open(out_folder+"/compiled_records"+file_suffix, "w")
         record_df.to_csv(record_fl, lineterminator="\n")
 
+def check_data(out_folder):
+    leaderboard_df = pd.DataFrame()
+    user_df = pd.DataFrame()
+    record_df = pd.DataFrame()
+    for filename in os.listdir(out_folder):
+        if filename.startswith("user_leaderboard"):
+            leaderboard_df = pd.read_csv(out_folder+"/"+ filename, index_col=[0])
+        # elif filename.startswith("compiled_records"):
+        #     record_df = pd.concat([record_df, pd.read_csv(out_folder+"/"+ filename, index_col=[0])], ignore_index=True)
+        elif filename.startswith("compiled_user"):
+            user_df = pd.concat([user_df, pd.read_csv(out_folder+"/"+ filename, index_col=[0])], ignore_index=True)
+    
+    # print(user_df["username"].to_list())
+    missing_users = leaderboard_df['user_name'].loc[leaderboard_df["user_name"].map(lambda x: x not in user_df['username'].values)]
+    print("MISSING USERS:",missing_users.to_list())
+
+    duplicate_users = user_df["username"].loc[user_df.duplicated("id")]
+    print("DUPLICATE USERS:", duplicate_users.to_list())
+
+check_data("out")
 # genRankSets("out/user_leaderboard_1730705078.csv")
-compileData("out")
+# compileData("out")
 # genCompleteSets("out/user_leaderboard_1730705078.csv", "out/compiled_user_info_cohorts_13-353.csv")
