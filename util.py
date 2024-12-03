@@ -119,18 +119,24 @@ def check_data(out_folder):
     leaderboard_df = pd.DataFrame()
     user_df = pd.DataFrame()
     record_df = pd.DataFrame()
+    print("Loading data")
     for filename in os.listdir(out_folder):
         if filename.startswith("user_leaderboard"):
             leaderboard_df = pd.read_csv(out_folder+"/"+ filename, index_col=[0])
+            print("Leaderboard loaded")
         # elif filename.startswith("compiled_records"):
         #     record_df = pd.concat([record_df, pd.read_csv(out_folder+"/"+ filename, index_col=[0])], ignore_index=True)
         elif filename.startswith("compiled_user"):
             user_df = pd.concat([user_df, pd.read_csv(out_folder+"/"+ filename, index_col=[0])], ignore_index=True)
-    
+    print("Data loaded")
+    # remove the ranks henry is still working on
+    leaderboard_df = leaderboard_df.loc[leaderboard_df["user_id"].isin(range(699206,849525)) == False]
     # print(user_df["username"].to_list())
+    print("Finding missing users")
     missing_users = leaderboard_df['user_name'].loc[leaderboard_df["user_name"].map(lambda x: x not in user_df['username'].values)]
     print("MISSING USERS:",missing_users.to_list())
 
+    print("Finding duplicate users")
     duplicate_users = user_df["username"].loc[user_df.duplicated("id")]
     print("DUPLICATE USERS:", duplicate_users.to_list())
 
