@@ -169,8 +169,8 @@ def incredible_data_completer(out_folder, set_folder, skip_ranks):
             tmpStr = ""
     fl.close()
 
-incredible_data_completer("out", "sets", range(699206,849525))
+# incredible_data_completer("out", "sets", range(699206,849525))
 # check_data("out_test")
 # genRankSets("out/user_leaderboard_1730705078.csv")
-# compileData("out")
+compileData("out")
 # genCompleteSets("out/user_leaderboard_1730705078.csv", "out/compiled_user_info_cohorts_13-353.csv")
