@@ -115,6 +115,67 @@ def compileData(out_folder, records=True):
         record_fl = open(out_folder+"/compiled_records"+file_suffix, "w")
         record_df.to_csv(record_fl, lineterminator="\n")
 
+def check_data(out_folder):
+    leaderboard_df = pd.DataFrame()
+    user_df = pd.DataFrame()
+    record_df = pd.DataFrame()
+    print("Loading data")
+    for filename in os.listdir(out_folder):
+        if filename.startswith("user_leaderboard"):
+            leaderboard_df = pd.read_csv(out_folder+"/"+ filename, index_col=[0])
+            print("Leaderboard loaded")
+        # elif filename.startswith("compiled_records"):
+        #     record_df = pd.concat([record_df, pd.read_csv(out_folder+"/"+ filename, index_col=[0])], ignore_index=True)
+        elif filename.startswith("compiled_user"):
+            user_df = pd.concat([user_df, pd.read_csv(out_folder+"/"+ filename, index_col=[0])], ignore_index=True)
+    print("Data loaded")
+    # print(user_df["username"].to_list())
+    print("Finding missing users")
+    # missing_users = leaderboard_df['user_name'].loc[leaderboard_df["user_name"].map(lambda x: x not in user_df['username'].values)]
+    missing_users = []
+    for rank in leaderboard_df['rank'].values:
+        if rank not in user_df["rank"].values:
+            usrname = leaderboard_df["user_name"].loc[leaderboard_df["rank"] == rank].values[0]
+            # print(usrname)
+            missing_users.append(usrname)
+    print("MISSING USERS:",missing_users)
+
+    print("Finding duplicate users")
+    duplicate_users = user_df["username"].loc[user_df.duplicated("id")]
+    print("DUPLICATE USERS:", duplicate_users.to_list())
+
+def incredible_data_completer(out_folder, set_folder):
+    leaderboard_df = pd.DataFrame()
+    user_df = pd.DataFrame()
+    print("Loading data")
+    for filename in os.listdir(out_folder):
+        if filename.startswith("user_leaderboard"):
+            leaderboard_df = pd.read_csv(out_folder+"/"+ filename, index_col=[0])
+            print("Leaderboard loaded")
+        # elif filename.startswith("compiled_records"):
+        #     record_df = pd.concat([record_df, pd.read_csv(out_folder+"/"+ filename, index_col=[0])], ignore_index=True)
+        elif filename.startswith("compiled_user"):
+            user_df = pd.concat([user_df, pd.read_csv(out_folder+"/"+ filename, index_col=[0])], ignore_index=True)
+    print("Data loaded")
+    print("Finding missing users")
+    missing_users = []
+    for rank in leaderboard_df['rank'].values:
+        if rank not in user_df["rank"].values:
+            # usrname = leaderboard_df["user_name"].loc[leaderboard_df["rank"] == rank].values[0]
+            # print(usrname)
+            missing_users.append(rank)
+    fl = open(set_folder+"/missing_rank_sets.csv", "w")
+
+    tmpStr = ""
+    for i in range(len(missing_users)):
+        tmpStr += str(missing_users[i])+","
+        if (i+1) % 15 == 0 or i==len(missing_users)-1:
+            fl.write(tmpStr.strip(",")+"\n")
+            tmpStr = ""
+    fl.close()
+
+# incredible_data_completer("out", "sets")
+# check_data("out")
 # genRankSets("out/user_leaderboard_1730705078.csv")
 compileData("out")
 # genCompleteSets("out/user_leaderboard_1730705078.csv", "out/compiled_user_info_cohorts_13-353.csv")
