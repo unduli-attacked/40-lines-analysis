@@ -251,4 +251,4 @@ def downloadMyRankSets(leaderboard_file, name, start_at=1):
 
 # TO DOWNLOAD: set "name" to your name and run the program
 # if you need to stop and restart: ctrl+C the program. when you restart, change "start_at" to the LINE NUMBER (from your sets file) of the set you'd like to start at
-downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="missingactual", start_at=1)
+downloadMyRankSets(leaderboard_file="out/user_leaderboard_1730705078.csv", name="missing", start_at=1)
