@@ -1,6 +1,6 @@
 .vscode/*
 out/out_sep/*
-*.png
+pngs_notrack/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
