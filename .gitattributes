@@ -1,3 +1,4 @@
 out/user_leaderboard_1730705078.csv filter=lfs diff=lfs merge=lfs -text
 out/compiled_*.csv filter=lfs diff=lfs merge=lfs -text
 out/all_*.csv filter=lfs diff=lfs merge=lfs -text
+analysis-joseph.ipynb filter=lfs diff=lfs merge=lfs -text
